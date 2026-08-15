@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { useActionData, useParams } from "react-router-dom"
 import { API_URL } from "../api"
+import { useNavigate } from "react-router-dom"
 import App from "../App"
 
 export default function Board(){
@@ -12,6 +13,8 @@ export default function Board(){
     const [ tasks , setTasks] = useState('')
     const [ listTitle , setlistTitle ] = useState('')
     const [ taskTitle , setTasktitle] = useState('')
+    const [renameModal , setRenameModal ] = useState(false)
+    const nav = useNavigate()
   useEffect(() => {
     async function loadBoards (){
         const res = await fetch(`${API_URL}/lists/${id}` , {
@@ -23,7 +26,7 @@ export default function Board(){
                 const tasksList = await fetch(`${API_URL}/tasks/${list.id}`, {
                     headers : {'Content-type' : 'application/json'}
                 })
-                const tasks = await res.json();
+                const tasks = await tasksList.json();
                 return {...list , tasks}
             })
         )
@@ -32,43 +35,41 @@ export default function Board(){
         loadBoards()
       },[id]);
 
-
-      async function addLists(){
-        const res = await fetch(`${API_URL}/lists/${id}` , {
-            method: 'POST',
+      async function addList(){
+        const res = await fetch(`${API_URL}/lists/${id}`, {
+            method : 'POST',
             headers : {'Content-type' : 'application/json'},
             body : JSON.stringify({title : listTitle})
         })
-
         const data = await res.json();
-        setLists(prev => [...prev , {data , task:[]}])
+       setLists(prev => [...prev , {...data , tasks:[]}])
       }
 
       async function deleteList(listId){
-         await fetch(`${API_URL}/lists/${listId}` , {
+        const res = await fetch(`${API_URL}/lists/${listId}` , {
             method : 'DELETE' ,
             headers : {'Content-type' : 'application/json'}
-        });
-        setLists(prev => prev.filter(list => list.id !== listId))
+        })
+
+        setLists(list => list.filter(p => p.id !== listId))
       }
 
-
-      async function renameList (listId){
-        const res = await fetch(`${API_URL}/lists/${listId}`,{
-            method : 'Patch',
+      async function renameList(listId){
+        const res = await fetch(`${API_URL}/lists/${listId}` , {
+            method : 'PATCH' ,
             headers : {'Content-type' : 'application/json'},
-            body : JSON.stringify({title: renameTitle})
+            body : JSON.stringify({title : renameTitle})
         })
-        const data = await res.json();
+        const updated = await res.json()
 
         setLists(prev => 
             prev.map(list => 
                 list.id === listId ?
-               list.title = data.title
-             : list)
+               {...list, title: updated.title}
+                : list
+            )
         )
       }
-
 
       async function addTask(listId , taskId){
         const res = await fetch(`${API_URL}/tasks/${listId}` , {
@@ -76,13 +77,73 @@ export default function Board(){
             headers : {'Content-type' : 'application/json'},
             body : JSON.stringify({title : taskTitle})
         })
-        const data = await res.json()
+        const data = await res.json();
 
-        setLists(prev =>
+        setLists(prev => 
             prev.map(list =>
                 list.id === listId ?
-                [...prev , (...list , task:data)]
+                {...list , tasks: [...list.tasks , data]}
+                : list
             )
         )
       }
+
+      async function deleteTask(taskId , listId){
+        const res = await fetch(`${API_URL}/tasks/${taskId}` , {
+            method : 'DELETE',
+            headers : {'Content-type' : 'application/json'}
+        })
+        setLists(prev => 
+            prev.map(list => 
+                list.id === listId ?
+                {...list , tasks : list.tasks.filter(p => p.id !==taskId)}
+                : list
+            )
+        )
+      }
+
+      return(
+        <div>
+            <button onClick={() => nav('/boards')}>Back To Boards</button>
+            <h3>board{id}</h3>
+            <button 
+            style={{
+                background : '#2e2e',
+                cursor : 'pointer'
+            }}
+            onClick={()=> setCreateListModal(true)}
+            >New List</button>
+
+            {createListModal && (
+                <CreateList />
+            )}
+            {list.map(list=> 
+                <div> 
+                    <h3>{list.title}</h3>
+                    <button 
+                    onClick={ () => {
+                        setRenameModal(true);
+                        setRenameTitle(list.id)
+                    }}
+                    style={{
+                        backgroundColor : 'blue'
+                    }}
+
+                    >
+                        rename List
+                    </button>
+                    <button
+                   onClick={() => deleteList(list.id)}
+                    >Delete List</button>
+
+                    {list.tasks.map(list => (
+                        <Task />
+                    ))}
+                </div>
+            )}
+
+
+
+        </div>
+      )
 }
