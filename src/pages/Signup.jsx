@@ -9,6 +9,7 @@ export default function SignUP(){
 
     async function handleSignUp(){
         const res = await fetch(`${API_URL}/singup`,{
+            method : 'POST',
             headers : {'Content-type' : 'application/json'},
             body: JSON.stringify({email , password})
         })
@@ -33,6 +34,13 @@ export default function SignUP(){
             onChange={e => setPassword(e.target.value)}
             />
             <button onClick={handleSignUp}>Signup</button>
+            <span onClick={() => nav("/login") }
+                style={{
+                    cursor : 'pointer'
+                }}
+                >
+                Already have a account
+            </span>
         </div>
     )
 }

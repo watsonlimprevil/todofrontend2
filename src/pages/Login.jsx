@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { API_URL } from "../api";
 import { useNavigate } from "react-router-dom";
-export default function login(){
+export default function Login(){
     const [email , setEmail] = useState('');
     const [password , setPassword] = useState('');
     const nav = useNavigate()
@@ -9,6 +9,7 @@ export default function login(){
 
     async function handlelogin(){
         const res = await fetch(`${API_URL}/login` , {
+            method : 'POST',
             headers: {'Content-tytpe' : 'application/json'},
             body: JSON.stringify({email , password})
         })
